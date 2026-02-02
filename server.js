@@ -96,6 +96,29 @@ app.post('/api/flows', async (req, res) => {
   res.json(result.rows[0]);
 });
 
+// === Animation SSE ===
+const sseClients = [];
+const animationQueue = [];
+
+app.get('/api/animation/stream', (req, res) => {
+  res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' });
+  res.flushHeaders();
+  sseClients.push(res);
+  req.on('close', () => { const i = sseClients.indexOf(res); if (i >= 0) sseClients.splice(i, 1); });
+});
+
+app.post('/api/animation', (req, res) => {
+  const event = { type: req.body.type || 'message_received', from: req.body.from || 'kevin', to: req.body.to, text: req.body.text || '', timestamp: new Date().toISOString() };
+  animationQueue.push(event);
+  while (animationQueue.length > 50) animationQueue.shift();
+  sseClients.forEach(client => { try { client.write(`data: ${JSON.stringify(event)}\n\n`); } catch(e) {} });
+  res.json({ ok: true });
+});
+
+app.get('/api/animation/queue', (req, res) => {
+  res.json({ ok: true, events: animationQueue.slice(-20) });
+});
+
 const PORT = 3210;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🏢 Virtual Office running at http://localhost:${PORT}`);
