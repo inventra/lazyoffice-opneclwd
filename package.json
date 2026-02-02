@@ -1,0 +1,18 @@
+{
+  "name": "virtual-office",
+  "version": "1.0.0",
+  "description": "一個前端網頁，以辦公室平面圖呈現團隊運作狀態： - 每個房間 = 一個部門 - 房間內有員工座位 - 需求流動用連接線呈現（類似 n8n） - 即時顯示誰在處理什麼任務、進度到哪",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "pg": "^8.17.2"
+  }
+}

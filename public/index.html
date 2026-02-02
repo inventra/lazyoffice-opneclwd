@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🏢 偷懶辦公室 Virtual Office</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>🏢 偷懶辦公室 Virtual Office</h1>
+    <div class="legend">
+      <span class="dot idle"></span> 閒置
+      <span class="dot working"></span> 進行中
+      <span class="dot busy"></span> 忙碌
+    </div>
+  </header>
+
+  <main>
+    <div class="office-container">
+      <svg id="flow-lines" class="flow-svg"></svg>
+      <div id="office-map"></div>
+    </div>
+
+    <aside id="task-panel">
+      <h2>📋 任務看板</h2>
+      <div id="task-list"></div>
+      <h2>🔄 最近流轉</h2>
+      <div id="flow-list"></div>
+    </aside>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
