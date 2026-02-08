@@ -990,6 +990,75 @@ app.get('/api/skills/:id/download', async (req, res) => {
   }
 });
 
+// ========================================
+// Office Position Save/Load API
+// ========================================
+
+const OFFICE_DATA_FILE = path.join(__dirname, 'data', 'office-layout.json');
+
+// 確保 data 目錄存在
+function ensureDataDir() {
+  const dataDir = path.join(__dirname, 'data');
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+}
+
+// POST /api/save - 保存辦公室佈局
+app.post('/api/save', async (req, res) => {
+  try {
+    ensureDataDir();
+    
+    const { offices, currentId, customSloths } = req.body;
+    
+    // 驗證資料格式
+    if (!offices || !Array.isArray(offices)) {
+      return res.status(400).json({ ok: false, error: 'Invalid data format' });
+    }
+    
+    const data = {
+      offices,
+      currentId,
+      customSloths: customSloths || {},
+      savedAt: new Date().toISOString()
+    };
+    
+    fs.writeFileSync(OFFICE_DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+    
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Save office layout error:', error);
+    res.status(500).json({ ok: false, error: 'Failed to save layout' });
+  }
+});
+
+// GET /api/load - 載入辦公室佈局
+app.get('/api/load', async (req, res) => {
+  try {
+    // 如果檔案不存在，回傳 null（讓前端使用預設值）
+    if (!fs.existsSync(OFFICE_DATA_FILE)) {
+      return res.json({ ok: false, data: null });
+    }
+    
+    const content = fs.readFileSync(OFFICE_DATA_FILE, 'utf8');
+    const data = JSON.parse(content);
+    
+    // 回傳符合前端期望的格式
+    res.json({ 
+      ok: true, 
+      data: {
+        offices: data.offices,
+        currentId: data.currentId,
+        customSloths: data.customSloths || {}
+      }
+    });
+  } catch (error) {
+    console.error('Load office layout error:', error);
+    // 如果讀取失敗，回傳 null 讓前端使用預設值
+    res.json({ ok: false, data: null });
+  }
+});
+
 // SSE 心跳
 setInterval(() => {
   sseClients.forEach(client => {
