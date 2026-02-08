@@ -34,7 +34,7 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: production
-      PORT: 3210
+      PORT: 3456
       PGHOST: postgres
       PGPORT: 5432
       PGDATABASE: virtual_office
@@ -44,7 +44,7 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       KIE_AI_API_KEY: ${KIE_AI_API_KEY:-}
     ports:
-      - "127.0.0.1:3210:3210"  # Only bind to localhost
+      - "127.0.0.1:3456:3456"  # Only bind to localhost
     networks:
       - virtual-office-network
     volumes:
@@ -53,7 +53,7 @@ services:
       # Optional: Mount logs
       - ./logs:/app/logs
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3210/api/agents"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3456/api/agents"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -1046,13 +1046,14 @@ app.get('/api/dashboard/costs', async (req, res) => {
         a.name,
         a.role,
         a.salary,
-        COUNT(CASE WHEN t.status = 'completed' AND t.completed_at >= $1 THEN 1 END) as tasks_completed,
-        COUNT(CASE WHEN t.status = 'completed' AND t.completed_at >= $1 AND t.title LIKE '%cron%' THEN 1 END) as tasks_cron,
-        COUNT(CASE WHEN t.status = 'completed' AND t.completed_at >= $1 AND (t.title LIKE '%monitor%' OR t.title LIKE '%監控%') THEN 1 END) as tasks_monitoring
+        COUNT(CASE WHEN t.status IN ('completed', 'done') AND COALESCE(t.completed_at, t.updated_at, t.created_at) >= $1 THEN 1 END) as tasks_completed,
+        COUNT(CASE WHEN t.status IN ('completed', 'done') AND COALESCE(t.completed_at, t.updated_at, t.created_at) >= $1 AND t.title LIKE '%cron%' THEN 1 END) as tasks_cron,
+        COUNT(CASE WHEN t.status IN ('completed', 'done') AND COALESCE(t.completed_at, t.updated_at, t.created_at) >= $1 AND (t.title LIKE '%monitor%' OR t.title LIKE '%監控%') THEN 1 END) as tasks_monitoring
       FROM agents a
       LEFT JOIN tasks t ON a.id = t.assigned_to
-      WHERE a.clawdbot_agent_id IS NOT NULL
       GROUP BY a.id, a.name, a.role, a.salary
+      HAVING COUNT(CASE WHEN t.status IN ('completed', 'done') THEN 1 END) > 0
+         OR a.clawdbot_agent_id IS NOT NULL
       ORDER BY tasks_completed DESC
     `, [monthStart]);
 
@@ -1088,13 +1089,13 @@ app.get('/api/dashboard/costs', async (req, res) => {
     // 取得過去 7 天的趨勢數據
     const trendResult = await pool.query(`
       SELECT 
-        DATE(completed_at) as date,
+        DATE(COALESCE(completed_at, updated_at, created_at)) as date,
         COUNT(*) as tasks,
         COUNT(*) * 187.5 as savings
       FROM tasks
-      WHERE status = 'completed' 
-        AND completed_at >= NOW() - INTERVAL '7 days'
-      GROUP BY DATE(completed_at)
+      WHERE status IN ('completed', 'done')
+        AND COALESCE(completed_at, updated_at, created_at) >= NOW() - INTERVAL '7 days'
+      GROUP BY DATE(COALESCE(completed_at, updated_at, created_at))
       ORDER BY date
     `);
 
@@ -1113,8 +1114,8 @@ app.get('/api/dashboard/costs', async (req, res) => {
         assigned_to as agent_id,
         COUNT(*) as tasks
       FROM tasks
-      WHERE status = 'completed' 
-        AND completed_at >= $1
+      WHERE status IN ('completed', 'done')
+        AND COALESCE(completed_at, updated_at, created_at) >= $1
         AND assigned_to IS NOT NULL
       GROUP BY assigned_to
       ORDER BY tasks DESC
@@ -1139,6 +1140,283 @@ app.get('/api/dashboard/costs', async (req, res) => {
   } catch (error) {
     console.error('Dashboard costs error:', error);
     res.status(500).json({ ok: false, error: 'Failed to load cost data' });
+  }
+});
+
+// POST /api/usage/push - 接收 token usage 推送（來自 vo-push-usage.sh）
+app.post('/api/usage/push', async (req, res) => {
+  try {
+    const { agent_id, session_key, model, usage } = req.body;
+    
+    if (!agent_id || !usage) {
+      return res.status(400).json({ ok: false, error: 'Missing agent_id or usage' });
+    }
+
+    // 計算台北時區的日期（應用層處理）
+    const taipeiDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }))
+      .toISOString().split('T')[0];
+
+    // 插入 token usage log（使用台北時區日期）
+    await pool.query(`
+      INSERT INTO token_usage_log 
+        (agent_id, session_key, model, input_tokens, output_tokens, cache_read_tokens, total_tokens, cost_usd, date)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `, [
+      agent_id,
+      session_key || '',
+      model || 'unknown',
+      usage.input || 0,
+      usage.output || 0,
+      usage.cacheRead || 0,
+      usage.totalTokens || 0,
+      usage.cost?.total || 0,
+      taipeiDate
+    ]);
+
+    // 更新今日統計（累加 tokens，使用台北時區日期）
+    await pool.query(`
+      INSERT INTO agent_daily_stats (agent_id, date, tokens)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (agent_id, date)
+      DO UPDATE SET 
+        tokens = agent_daily_stats.tokens + $3,
+        updated_at = CURRENT_TIMESTAMP
+    `, [agent_id, taipeiDate, usage.totalTokens || 0]);
+
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Usage push error:', error);
+    res.status(500).json({ ok: false, error: 'Failed to save usage data' });
+  }
+});
+
+// POST /api/engagement/increment - 增加互動統計（可用於 vo-push.sh 整合）
+app.post('/api/engagement/increment', async (req, res) => {
+  try {
+    const { agent_id, type, value } = req.body;
+    
+    if (!agent_id || !type) {
+      return res.status(400).json({ ok: false, error: 'Missing agent_id or type' });
+    }
+
+    const validTypes = ['conversations', 'words', 'errors', 'praises', 'tasks_completed'];
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({ ok: false, error: 'Invalid type' });
+    }
+
+    const incrementValue = value || 1;
+
+    // 更新今日統計
+    await pool.query(`
+      INSERT INTO agent_daily_stats (agent_id, date, ${type})
+      VALUES ($1, CURRENT_DATE, $2)
+      ON CONFLICT (agent_id, date)
+      DO UPDATE SET 
+        ${type} = agent_daily_stats.${type} + $2,
+        updated_at = CURRENT_TIMESTAMP
+    `, [agent_id, incrementValue]);
+
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Engagement increment error:', error);
+    res.status(500).json({ ok: false, error: 'Failed to increment stat' });
+  }
+});
+
+// GET /api/dashboard/engagement - 互動統計儀表板數據
+app.get('/api/dashboard/engagement', async (req, res) => {
+  try {
+    // 計算台北時區的日期（應用層處理）
+    const taipeiDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }))
+      .toISOString().split('T')[0];
+
+    // 取得所有 agents 列表
+    const agentsResult = await pool.query(`
+      SELECT id, name, role, clawdbot_agent_id
+      FROM agents
+      ORDER BY name
+    `);
+
+    // 取得今日統計（使用台北時區日期，比較 date 而非 timestamp）
+    const todayStatsResult = await pool.query(`
+      SELECT agent_id, conversations, words, tokens, errors, praises, tasks_completed
+      FROM agent_daily_stats
+      WHERE (date AT TIME ZONE 'Asia/Taipei')::date = $1
+    `, [taipeiDate]);
+
+    const todayStatsMap = {};
+    todayStatsResult.rows.forEach(row => {
+      todayStatsMap[row.agent_id] = {
+        conversations: parseInt(row.conversations) || 0,
+        words: parseInt(row.words) || 0,
+        tokens: parseInt(row.tokens) || 0,
+        errors: parseInt(row.errors) || 0,
+        praises: parseInt(row.praises) || 0,
+        tasks_completed: parseInt(row.tasks_completed) || 0
+      };
+    });
+
+    // 取得今日真實 token usage（使用台北時區日期，比較 date 而非 timestamp）
+    const todayTokensResult = await pool.query(`
+      SELECT 
+        agent_id,
+        SUM(input_tokens) as input,
+        SUM(output_tokens) as output,
+        SUM(total_tokens) as total,
+        SUM(cost_usd) as cost_usd
+      FROM token_usage_log
+      WHERE (date AT TIME ZONE 'Asia/Taipei')::date = $1
+      GROUP BY agent_id
+    `, [taipeiDate]);
+
+    const realTokensMap = {};
+    todayTokensResult.rows.forEach(row => {
+      realTokensMap[row.agent_id] = {
+        input: parseInt(row.input) || 0,
+        output: parseInt(row.output) || 0,
+        total: parseInt(row.total) || 0,
+        cost_usd: parseFloat(row.cost_usd) || 0
+      };
+    });
+
+    // 取得過去 7 天趨勢
+    const trendResult = await pool.query(`
+      SELECT agent_id, date, conversations, words, tokens
+      FROM agent_daily_stats
+      WHERE date >= CURRENT_DATE - INTERVAL '6 days'
+      ORDER BY date ASC
+    `);
+
+    const trendMap = {};
+    trendResult.rows.forEach(row => {
+      if (!trendMap[row.agent_id]) trendMap[row.agent_id] = [];
+      trendMap[row.agent_id].push({
+        date: row.date.toISOString().split('T')[0],
+        conversations: parseInt(row.conversations) || 0,
+        words: parseInt(row.words) || 0,
+        tokens: parseInt(row.tokens) || 0
+      });
+    });
+
+    // 生成員工心聲（inner thoughts）
+    function generateInnerThought(agentId, stats) {
+      const { conversations, tasks_completed, errors, praises } = stats;
+      
+      const thoughts = {
+        'kevin小幫手': [
+          conversations === 0 ? '今天好安靜...是不是該主動關心一下 Kevin？' : `今天跟 Kevin 聊了 ${conversations} 次，感覺他挺忙的`,
+          tasks_completed >= 5 ? `今天分派了 ${tasks_completed} 個任務出去，當 dispatcher 真的有點累 😅` : '今天工作量還好，不過要保持警覺',
+          errors >= 2 ? `糟糕，今天出了 ${errors} 個錯...得更小心了` : '今天沒什麼大問題，維持水準！'
+        ],
+        'alex': [
+          tasks_completed >= 5 ? `今天寫了 ${tasks_completed} 個功能，手指快斷了 💀` : '今天工作量還行，不過還是想摸魚...',
+          errors >= 3 ? `Debug 到懷疑人生...已經改了 ${errors} 次了` : '今天 code 一次過，奇蹟！',
+          conversations === 0 ? '終於沒人來煩我了，可以專心寫 code' : '又被打斷思緒了...'
+        ],
+        'lena': [
+          tasks_completed >= 3 ? `今天研究了 ${tasks_completed} 個主題，腦袋快爆了 🤯` : '今天研究進度正常，明天繼續',
+          conversations >= 5 ? '大家一直問我問題，我也很忙好嗎！' : '今天比較少人打擾，很好',
+          praises >= 2 ? '終於有人欣賞我的研究了 😊' : '默默做研究中...'
+        ],
+        'writer': [
+          tasks_completed >= 4 ? `今天寫了 ${tasks_completed} 篇文案，靈感都要枯竭了` : '今天寫作狀態還不錯',
+          errors >= 2 ? '又被退稿了...我的文字到底哪裡不好 😢' : '今天文案都過關，很順',
+          praises >= 2 ? '被稱讚了！看來我的文字有打動人 ❤️' : '繼續努力寫出好文案'
+        ],
+        'n8n-bot': [
+          tasks_completed >= 5 ? `今天做了 ${tasks_completed} 個 workflow，自動化大師就是我！` : '今天工作量正常，繼續自動化一切',
+          errors >= 3 ? `${errors} 個 workflow 出錯...是不是該 debug 了` : '今天 workflow 都很穩定',
+          conversations === 0 ? '沒人需要自動化嗎？我可是隨時待命' : 'n8n 任務處理中...'
+        ],
+        'secguard': [
+          errors >= 1 ? `⚠️ 偵測到 ${errors} 個可疑活動，保持警戒！` : '今天系統很安全，但不能鬆懈',
+          tasks_completed >= 3 ? `掃描了 ${tasks_completed} 次，沒有漏網之魚` : '持續監控中，一切正常',
+          praises >= 1 ? '被認可了！守護安全就是我的使命 🛡️' : '默默守護系統安全...'
+        ]
+      };
+
+      const pool = thoughts[agentId] || ['努力工作中...', '做好本份就好', '平凡的一天'];
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    // 組合每個 agent 的數據
+    const agents = agentsResult.rows.map(agent => {
+      const agentId = agent.clawdbot_agent_id || agent.name;
+      const todayStats = todayStatsMap[agentId] || {
+        conversations: 0, words: 0, tokens: 0, errors: 0, praises: 0, tasks_completed: 0
+      };
+      const realTokens = realTokensMap[agentId] || { total: 0, cost_usd: 0 };
+      const trend = trendMap[agentId] || [];
+
+      // 填滿 7 天（如果資料不足）
+      const fullTrend = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        const found = trend.find(t => t.date === dateStr);
+        fullTrend.push(found || { date: dateStr, conversations: 0, words: 0, tokens: 0 });
+      }
+
+      return {
+        id: agentId,
+        name: agent.name,
+        role: agent.role || '',
+        today: todayStats,
+        real_tokens: realTokens,
+        trend: fullTrend,
+        inner_thought: generateInnerThought(agentId, todayStats)
+      };
+    });
+
+    // 計算全域統計
+    let globalToday = { conversations: 0, words: 0, tokens: 0, tasks_completed: 0 };
+    let globalWeek = { conversations: 0, words: 0, tokens: 0, tasks_completed: 0 };
+    let realTokenUsage = { input: 0, output: 0, total: 0, cost_usd: 0 };
+
+    agents.forEach(a => {
+      globalToday.conversations += a.today.conversations;
+      globalToday.words += a.today.words;
+      globalToday.tokens += a.today.tokens;
+      globalToday.tasks_completed += a.today.tasks_completed;
+
+      a.trend.forEach(t => {
+        globalWeek.conversations += t.conversations;
+        globalWeek.words += t.words;
+        globalWeek.tokens += t.tokens;
+      });
+
+      realTokenUsage.total += a.real_tokens.total;
+      realTokenUsage.cost_usd += a.real_tokens.cost_usd;
+    });
+
+    // 從今日真實 token 總計取得 input/output（全部 agents）（使用台北時區日期，比較 date 而非 timestamp）
+    const todayTotalResult = await pool.query(`
+      SELECT 
+        SUM(input_tokens) as input,
+        SUM(output_tokens) as output,
+        SUM(cache_read_tokens) as cache_read
+      FROM token_usage_log
+      WHERE (date AT TIME ZONE 'Asia/Taipei')::date = $1
+    `, [taipeiDate]);
+
+    if (todayTotalResult.rows.length > 0 && todayTotalResult.rows[0].input !== null) {
+      realTokenUsage.input = parseInt(todayTotalResult.rows[0].input) || 0;
+      realTokenUsage.output = parseInt(todayTotalResult.rows[0].output) || 0;
+      realTokenUsage.cache_read = parseInt(todayTotalResult.rows[0].cache_read) || 0;
+    }
+
+    res.json({
+      ok: true,
+      global_today: globalToday,
+      global_week: globalWeek,
+      real_token_usage: realTokenUsage,
+      agents: agents
+    });
+
+  } catch (error) {
+    console.error('Dashboard engagement error:', error);
+    res.status(500).json({ ok: false, error: 'Failed to load engagement data' });
   }
 });
 
@@ -1178,7 +1456,7 @@ setInterval(() => {
   });
 }, 30000);
 
-const PORT = 3210;
+const PORT = 3456;
 app.listen(PORT, '127.0.0.1', () => {
   console.log(`🏢 Virtual Office running at http://127.0.0.1:${PORT}`);
 });
