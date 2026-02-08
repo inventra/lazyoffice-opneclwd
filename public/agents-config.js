@@ -436,22 +436,22 @@ async function openMemoryModal(agentId, agentName) {
     `;
     
     modal.innerHTML = `
-      <div style="background: white; border-radius: 12px; padding: 30px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
+      <div style="background: #1a1a2e; border-radius: 12px; padding: 30px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-          <h2 style="margin: 0;">📝 ${agentName} 的 Memory</h2>
-          <button onclick="closeMemoryModal()" style="background: none; border: none; font-size: 24px; cursor: pointer;">✕</button>
+          <h2 style="margin: 0; color: #e8d5b7;">📝 ${agentName} 的 Memory</h2>
+          <button onclick="closeMemoryModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #e8d5b7;">✕</button>
         </div>
         
         ${files.length === 0 ? 
           '<p style="color: #999; text-align: center; padding: 40px;">尚無 memory 檔案</p>' :
           `<div style="display: flex; flex-direction: column; gap: 10px;">
             ${files.map(file => `
-              <div style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; cursor: pointer; transition: background 0.2s;"
-                   onmouseover="this.style.background='#f8f9fa'"
-                   onmouseout="this.style.background='white'"
+              <div style="border: 1px solid #2a3a5c; background: #0d1525; border-radius: 8px; padding: 15px; cursor: pointer; transition: background 0.2s;"
+                   onmouseover="this.style.background='#16213e'; this.style.borderColor='#3a5a8c'"
+                   onmouseout="this.style.background='#0d1525'; this.style.borderColor='#2a3a5c'"
                    onclick="viewMemoryFile(${agentId}, '${agentName}', '${file.name}')">
-                <div style="font-weight: 500; margin-bottom: 5px;">📄 ${file.name}</div>
-                <div style="font-size: 12px; color: #666;">
+                <div style="font-weight: 500; margin-bottom: 5px; color: #e8d5b7;">📄 ${file.name}</div>
+                <div style="font-size: 12px; color: #99aabb;">
                   ${(file.size / 1024).toFixed(1)} KB · 修改於 ${new Date(file.modified).toLocaleString('zh-TW')}
                 </div>
               </div>
@@ -510,10 +510,10 @@ async function openMemoryEditor(agentId, agentName, filename) {
     `;
     
     modal.innerHTML = `
-      <div style="background: white; border-radius: 12px; padding: 30px; max-width: 900px; width: 90%; max-height: 90vh; display: flex; flex-direction: column;">
+      <div style="background: #1a1a2e; border-radius: 12px; padding: 30px; max-width: 900px; width: 90%; max-height: 90vh; display: flex; flex-direction: column;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-          <h2 style="margin: 0;">✏️ 編輯：${filename}</h2>
-          <button onclick="closeMemoryModal()" style="background: none; border: none; font-size: 24px; cursor: pointer;">✕</button>
+          <h2 style="margin: 0; color: #e8d5b7;">✏️ 編輯：${filename}</h2>
+          <button onclick="closeMemoryModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #e8d5b7;">✕</button>
         </div>
         
         <textarea id="memory-content" style="
@@ -521,10 +521,12 @@ async function openMemoryEditor(agentId, agentName, filename) {
           font-family: 'Monaco', 'Menlo', monospace;
           font-size: 13px;
           padding: 15px;
-          border: 1px solid #ddd;
+          border: 1px solid #2a3a5c;
           border-radius: 6px;
           resize: none;
           margin-bottom: 15px;
+          background: #0d1525;
+          color: #e8d5b7;
         ">${data.content}</textarea>
         
         <div style="display: flex; gap: 10px;">
@@ -696,16 +698,16 @@ async function viewMemoryFile(agentId, agentName, filename) {
     `;
     
     modal.innerHTML = `
-      <div style="background: white; border-radius: 12px; padding: 30px; max-width: 800px; width: 90%; max-height: 80vh; display: flex; flex-direction: column;">
+      <div style="background: #1a1a2e; border-radius: 12px; padding: 30px; max-width: 800px; width: 90%; max-height: 80vh; display: flex; flex-direction: column;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-          <h2 style="margin: 0;">📄 ${filename}</h2>
+          <h2 style="margin: 0; color: #e8d5b7;">📄 ${filename}</h2>
           <div style="display: flex; gap: 10px;">
             <button onclick="editMemoryFile(${agentId}, '${agentName}', '${filename}')" style="padding: 8px 16px; background: #2196F3; color: white; border: none; border-radius: 6px; cursor: pointer;">✏️ 編輯</button>
-            <button onclick="closeViewerModal()" style="background: none; border: none; font-size: 24px; cursor: pointer;">✕</button>
+            <button onclick="closeViewerModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #e8d5b7;">✕</button>
           </div>
         </div>
         
-        <div style="flex: 1; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 20px; background: #f8f9fa; white-space: pre-wrap; font-family: monospace; font-size: 14px; line-height: 1.6;">
+        <div style="flex: 1; overflow-y: auto; border: 1px solid #2a3a5c; border-radius: 8px; padding: 20px; background: #0d1525; color: #e8d5b7; white-space: pre-wrap; font-family: monospace; font-size: 14px; line-height: 1.6;">
 ${data.content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
         </div>
       </div>
