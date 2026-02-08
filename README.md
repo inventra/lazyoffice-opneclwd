@@ -2,7 +2,7 @@
 
 一個視覺化的 AI 團隊協作系統，以可愛的像素藝術風格呈現 AI Agents 的工作狀態。
 
-![Screenshot](https://via.placeholder.com/800x400.png?text=Virtual+Office+Screenshot)
+![Virtual Office Screenshot](screenshot.jpg)
 
 ## ⚠️ **重要安全警告**
 
