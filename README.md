@@ -61,18 +61,20 @@ Virtual Office 會持續監控您的 AI agents 並提供即時動畫效果。這
 
 ### 🤖 Clawdbot 自動配置（最快速！）
 
-如果你使用 Clawdbot，讓它讀取 `SETUP.md` 即可自動完成所有設定：
+如果你使用 Clawdbot，一句話即可自動完成所有設定：
 
 ```bash
 # 在 Clawdbot 中說：
-請讀取 ~/Desktop/virtual-office/SETUP.md 並完成設定
+請下載專案並完成設定
+專案路徑：https://github.com/inventra/lazyoffice-opneclwd
 ```
 
 Clawdbot 會自動：
-1. ✅ 檢查 Docker 環境
-2. ✅ 執行安裝腳本
-3. ✅ 建立 vo-push.sh 整合腳本
-4. ✅ 配置環境變數
+1. ✅ 下載專案到 ~/Desktop/virtual-office
+2. ✅ 檢查 Docker 環境
+3. ✅ 執行安裝腳本
+4. ✅ 建立 vo-push.sh 整合腳本
+5. ✅ 配置環境變數
 
 ---
 
