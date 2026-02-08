@@ -1,1 +1,46 @@
+# Dependencies
 node_modules/
+package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Database
+*.db
+*.sqlite
+# Allow init-db.sql
+!init-db.sql
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build
+dist/
+build/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Secrets
+*secret*
+*credential*
+*password*

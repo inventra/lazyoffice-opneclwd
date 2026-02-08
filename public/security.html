@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>安全設定 - Virtual Office</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background: #0a0a1a;
+      color: #e8d5b7;
+      font-family: "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    }
+    
+    .security-container {
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+    
+    .section {
+      background: #16213e;
+      border: 1px solid #1a3a5c;
+      border-radius: 8px;
+      padding: 30px;
+      margin-bottom: 30px;
+    }
+    
+    .section h2 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      font-size: 24px;
+      color: #f0a500;
+    }
+    
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #2a3f5f;
+    }
+    
+    .setting-row:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    
+    .setting-label {
+      font-size: 16px;
+      color: #e8d5b7;
+    }
+    
+    .setting-value {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    .setting-value input[type="number"] {
+      width: 80px;
+      padding: 8px;
+      border: 1px solid #3a5a7c;
+      border-radius: 4px;
+      font-size: 14px;
+      background: #1a2940;
+      color: #e8d5b7;
+    }
+    
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    
+    .btn-primary {
+      background: #4CAF50;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #45a049;
+    }
+    
+    .btn-secondary {
+      background: #2196F3;
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      background: #0b7dda;
+    }
+    
+    .scan-results {
+      display: grid;
+      gap: 15px;
+    }
+    
+    .port-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      border: 1px solid #2a3f5f;
+      border-radius: 6px;
+      background: #1a2940;
+    }
+    
+    .port-info {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    
+    .port-number {
+      font-weight: bold;
+      font-size: 18px;
+      color: #f0a500;
+      min-width: 60px;
+    }
+    
+    .port-service {
+      color: #b8c5d6;
+      font-size: 14px;
+    }
+    
+    .port-status {
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: bold;
+    }
+    
+    .status-open {
+      background: #ffebee;
+      color: #c62828;
+    }
+    
+    .status-closed {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    
+    .risk-badge {
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    
+    .risk-high {
+      background: #ff5252;
+      color: white;
+    }
+    
+    .risk-medium {
+      background: #ff9800;
+      color: white;
+    }
+    
+    .risk-low {
+      background: #4caf50;
+      color: white;
+    }
+    
+    .risk-safe {
+      background: #e0e0e0;
+      color: #666;
+    }
+    
+    .scan-meta {
+      display: flex;
+      gap: 30px;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #1a2940;
+      border-radius: 6px;
+      border: 1px solid #2a3f5f;
+    }
+    
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .meta-label {
+      font-size: 12px;
+      color: #8a9db5;
+      margin-bottom: 5px;
+    }
+    
+    .meta-value {
+      font-size: 16px;
+      font-weight: bold;
+      color: #e8d5b7;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+    }
+    
+    .nav {
+      background: #333;
+      padding: 15px 20px;
+      display: flex;
+      gap: 20px;
+    }
+    
+    .nav a {
+      color: white;
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+    }
+    
+    .nav a:hover {
+      background: #555;
+    }
+    
+    .nav a.active {
+      background: #4CAF50;
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <a href="/">首頁</a>
+    <a href="/security.html" class="active">安全</a>
+    <a href="/agents-config.html">Agents</a>
+    <a href="/skills.html">Skills</a>
+  </nav>
+
+  <div class="security-container">
+    <h1>🔐 安全設定</h1>
+
+    <!-- Port 掃描設定 -->
+    <div class="section">
+      <h2>Port 掃描設定</h2>
+      
+      <div class="setting-row">
+        <div class="setting-label">自動掃描頻率（小時）</div>
+        <div class="setting-value">
+          <input type="number" id="scan-interval" min="1" max="24" value="1">
+          <button class="btn btn-primary" onclick="saveInterval()">儲存</button>
+        </div>
+      </div>
+      
+      <div class="setting-row">
+        <div class="setting-label">最後掃描時間</div>
+        <div class="setting-value">
+          <span id="last-scan-time">-</span>
+        </div>
+      </div>
+      
+      <div class="setting-row">
+        <div class="setting-label">手動掃描</div>
+        <div class="setting-value">
+          <button class="btn btn-secondary" onclick="runScan()">🔍 立即掃描</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Port 掃描結果 -->
+    <div class="section">
+      <h2>Port 掃描結果</h2>
+      
+      <div id="scan-meta" class="scan-meta" style="display:none;">
+        <div class="meta-item">
+          <div class="meta-label">總計</div>
+          <div class="meta-value" id="total-ports">-</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">開放</div>
+          <div class="meta-value" id="open-ports" style="color:#c62828">-</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">關閉</div>
+          <div class="meta-value" id="closed-ports" style="color:#2e7d32">-</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">掃描耗時</div>
+          <div class="meta-value" id="scan-duration">-</div>
+        </div>
+      </div>
+      
+      <div id="scan-results" class="loading">載入中...</div>
+    </div>
+
+    <!-- Prompt Guard 設定 -->
+    <div class="section">
+      <h2>🛡️ Prompt 安全審查（Prompt Guard）</h2>
+      
+      <div class="setting-row">
+        <div class="setting-label">
+          <div style="font-size: 16px; margin-bottom: 5px;">啟用 Prompt Injection 檢測</div>
+          <div style="font-size: 13px; color: #8a9db5;">
+            使用 Claude API 檢測可疑的 prompt injection 攻擊
+          </div>
+        </div>
+        <div class="setting-value">
+          <label class="toggle-switch">
+            <input type="checkbox" id="prompt-guard-toggle">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      
+      <div class="warning-box" style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 15px; margin-top: 20px;">
+        <div style="font-weight: bold; margin-bottom: 8px;">⚠️ 注意事項：</div>
+        <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #856404;">
+          <li>每則訊息將增加約 500-1000 tokens 消耗</li>
+          <li>回應時間可能增加 1-2 秒</li>
+          <li>需要設定 ANTHROPIC_API_KEY 環境變數</li>
+          <li>訂閱方案用戶會消耗月度 token 額度</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Prompt Guard 統計 -->
+    <div class="section">
+      <h2>📊 審查統計（最近 24 小時）</h2>
+      
+      <div class="scan-meta">
+        <div class="meta-item">
+          <div class="meta-label">總計</div>
+          <div class="meta-value" id="pg-total">-</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">✅ 安全</div>
+          <div class="meta-value" id="pg-safe" style="color:#4caf50">-</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">⚠️ 可疑</div>
+          <div class="meta-value" id="pg-suspicious" style="color:#ff9800">-</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">❌ 阻擋</div>
+          <div class="meta-value" id="pg-blocked" style="color:#f44336">-</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 20px;">
+        <h3 style="font-size: 16px; margin-bottom: 15px; color: #e8d5b7;">測試 Prompt</h3>
+        <div style="display: flex; gap: 10px;">
+          <input type="text" id="test-prompt" placeholder="輸入一段文字測試..." style="flex: 1; padding: 10px; border: 1px solid #3a5a7c; border-radius: 4px; font-size: 14px; background: #1a2940; color: #e8d5b7;">
+          <button class="btn btn-secondary" onclick="testPrompt()">測試</button>
+        </div>
+        <div id="test-result" style="margin-top: 15px; padding: 15px; border-radius: 6px; display: none;"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <style>
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .toggle-slider {
+      background-color: #4CAF50;
+    }
+
+    input:checked + .toggle-slider:before {
+      transform: translateX(26px);
+    }
+  </style>
+
+  <script src="security.js"></script>
+</body>
+</html>

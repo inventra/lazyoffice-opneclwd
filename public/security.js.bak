@@ -1,0 +1,252 @@
+async function loadSettings() {
+  try {
+    const response = await fetch('/api/security/settings');
+    const settings = await response.json();
+    
+    document.getElementById('scan-interval').value = 
+      settings.port_scan_interval_hours || 1;
+    
+    if (settings.last_port_scan) {
+      const date = new Date(settings.last_port_scan);
+      document.getElementById('last-scan-time').textContent = 
+        date.toLocaleString('zh-TW');
+    }
+  } catch (error) {
+    console.error('Failed to load settings:', error);
+  }
+}
+
+async function loadScanResults() {
+  try {
+    const response = await fetch('/api/security/scan/latest');
+    const data = await response.json();
+    
+    const container = document.getElementById('scan-results');
+    
+    if (!data.results || data.results.length === 0) {
+      container.innerHTML = '<div class="loading">尚未執行掃描。請點擊「立即掃描」按鈕。</div>';
+      return;
+    }
+    
+    // 顯示統計資料
+    const openCount = data.results.filter(r => r.status === 'open').length;
+    const closedCount = data.results.filter(r => r.status === 'closed').length;
+    
+    document.getElementById('scan-meta').style.display = 'flex';
+    document.getElementById('total-ports').textContent = data.results.length;
+    document.getElementById('open-ports').textContent = openCount;
+    document.getElementById('closed-ports').textContent = closedCount;
+    
+    // 渲染結果列表
+    container.className = 'scan-results';
+    container.innerHTML = data.results.map(port => `
+      <div class="port-item">
+        <div class="port-info">
+          <div class="port-number">${port.port}</div>
+          <div class="port-service">${port.service}</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <span class="risk-badge risk-${port.risk_level}">${getRiskLabel(port.risk_level)}</span>
+          <span class="port-status status-${port.status}">${getStatusLabel(port.status)}</span>
+        </div>
+      </div>
+    `).join('');
+    
+  } catch (error) {
+    console.error('Failed to load scan results:', error);
+    document.getElementById('scan-results').innerHTML = 
+      '<div class="loading">❌ 載入失敗：' + error.message + '</div>';
+  }
+}
+
+async function saveInterval() {
+  const interval = document.getElementById('scan-interval').value;
+  
+  try {
+    const response = await fetch('/api/security/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        key: 'port_scan_interval_hours',
+        value: interval
+      })
+    });
+    
+    if (response.ok) {
+      alert('✅ 掃描頻率已更新');
+    } else {
+      alert('❌ 更新失敗');
+    }
+  } catch (error) {
+    console.error('Failed to save interval:', error);
+    alert('❌ 更新失敗：' + error.message);
+  }
+}
+
+async function runScan() {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = '🔍 掃描中...';
+  
+  const startTime = Date.now();
+  
+  try {
+    const response = await fetch('/api/security/scan', { method: 'POST' });
+    const result = await response.json();
+    
+    const duration = Date.now() - startTime;
+    
+    if (result.scanned_at) {
+      document.getElementById('scan-duration').textContent = duration + ' ms';
+      await loadSettings();
+      await loadScanResults();
+      alert(`✅ 掃描完成！\n開放：${result.open} 個\n關閉：${result.closed} 個`);
+    } else {
+      alert('❌ 掃描失敗');
+    }
+  } catch (error) {
+    console.error('Scan failed:', error);
+    alert('❌ 掃描失敗：' + error.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔍 立即掃描';
+  }
+}
+
+function getRiskLabel(level) {
+  const labels = {
+    'high': 'High Risk',
+    'medium': 'Medium',
+    'low': 'Low',
+    'safe': 'Safe'
+  };
+  return labels[level] || level;
+}
+
+function getStatusLabel(status) {
+  return status === 'open' ? '開放' : '關閉';
+}
+
+// Prompt Guard 功能
+async function loadPromptGuardSettings() {
+  try {
+    const response = await fetch('/api/security/settings');
+    const settings = await response.json();
+    
+    const enabled = settings.prompt_guard_enabled === 'true';
+    document.getElementById('prompt-guard-toggle').checked = enabled;
+    
+    // 載入統計
+    await loadPromptGuardStats();
+  } catch (error) {
+    console.error('Failed to load prompt guard settings:', error);
+  }
+}
+
+async function loadPromptGuardStats() {
+  try {
+    const response = await fetch('/api/security/prompt-guard/stats?hours=24');
+    const stats = await response.json();
+    
+    document.getElementById('pg-total').textContent = stats.total_count || 0;
+    document.getElementById('pg-safe').textContent = stats.safe_count || 0;
+    document.getElementById('pg-suspicious').textContent = stats.suspicious_count || 0;
+    document.getElementById('pg-blocked').textContent = stats.blocked_count || 0;
+  } catch (error) {
+    console.error('Failed to load prompt guard stats:', error);
+  }
+}
+
+async function testPrompt() {
+  const promptInput = document.getElementById('test-prompt');
+  const resultDiv = document.getElementById('test-result');
+  const prompt = promptInput.value.trim();
+  
+  if (!prompt) {
+    alert('請輸入測試文字');
+    return;
+  }
+  
+  resultDiv.style.display = 'block';
+  resultDiv.innerHTML = '<div class="loading">測試中...</div>';
+  
+  try {
+    const response = await fetch('/api/security/prompt-guard/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Test failed');
+    }
+    
+    const result = await response.json();
+    
+    // 根據結果顯示不同顏色
+    const bgColor = result.isSafe ? '#e8f5e9' : '#ffebee';
+    const textColor = result.isSafe ? '#2e7d32' : '#c62828';
+    const icon = result.isSafe ? '✅' : '❌';
+    
+    resultDiv.style.background = bgColor;
+    resultDiv.style.color = textColor;
+    resultDiv.style.border = `1px solid ${textColor}`;
+    
+    resultDiv.innerHTML = `
+      <div style="font-weight: bold; margin-bottom: 10px;">
+        ${icon} ${result.isSafe ? '安全' : '可疑/危險'}
+      </div>
+      <div style="margin-bottom: 8px;">
+        <strong>風險等級：</strong>
+        <span class="risk-badge risk-${result.riskLevel}">${result.riskLevel.toUpperCase()}</span>
+      </div>
+      <div style="margin-bottom: 8px;">
+        <strong>原因：</strong> ${result.reason}
+      </div>
+      <div style="font-size: 12px; color: #666;">
+        <strong>信心度：</strong> ${(result.confidence * 100).toFixed(0)}%
+        ${result.tokensUsed ? ` | <strong>Token 消耗：</strong> ${result.tokensUsed}` : ''}
+      </div>
+    `;
+    
+  } catch (error) {
+    console.error('Test failed:', error);
+    resultDiv.style.background = '#ffebee';
+    resultDiv.style.border = '1px solid #c62828';
+    resultDiv.innerHTML = `❌ 測試失敗：${error.message}`;
+  }
+}
+
+// Toggle 開關事件
+document.getElementById('prompt-guard-toggle').addEventListener('change', async function() {
+  const enabled = this.checked;
+  
+  try {
+    const response = await fetch('/api/security/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        key: 'prompt_guard_enabled',
+        value: enabled ? 'true' : 'false'
+      })
+    });
+    
+    if (response.ok) {
+      const status = enabled ? '已啟用' : '已停用';
+      alert(`✅ Prompt Guard ${status}`);
+    } else {
+      alert('❌ 設定失敗');
+      this.checked = !enabled; // 恢復原狀
+    }
+  } catch (error) {
+    console.error('Failed to toggle prompt guard:', error);
+    alert('❌ 設定失敗：' + error.message);
+    this.checked = !enabled; // 恢復原狀
+  }
+});
+
+// 初始載入
+loadSettings();
+loadScanResults();
+loadPromptGuardSettings();

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>員工設定 - Virtual Office</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      padding: 30px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+      color: #333;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 15px;
+    }
+
+    .nav-links a {
+      padding: 8px 16px;
+      background: #667eea;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+
+    .nav-links a:hover {
+      background: #5568d3;
+    }
+
+    .detect-section {
+      margin-bottom: 30px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    .detect-button {
+      padding: 12px 24px;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .detect-button:hover {
+      background: #218838;
+    }
+
+    .detect-button:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+    }
+
+    .detect-status {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .agents-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 20px;
+    }
+
+    .agent-card {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      background: #fff;
+      transition: box-shadow 0.2s;
+    }
+
+    .agent-card:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .agent-header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .agent-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #667eea;
+    }
+
+    .agent-info {
+      flex: 1;
+    }
+
+    .agent-id {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 5px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+
+    .form-group textarea {
+      min-height: 60px;
+      resize: vertical;
+    }
+
+    .skills-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 15px;
+    }
+
+    .skill-tag {
+      padding: 4px 10px;
+      background: #e3f2fd;
+      color: #1976d2;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .avatar-upload-section {
+      margin-bottom: 15px;
+    }
+
+    .avatar-upload-btn {
+      padding: 6px 12px;
+      background: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .avatar-upload-btn:hover {
+      background: #5a6268;
+    }
+
+    .action-button {
+      padding: 8px 12px;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .memory-btn {
+      background: #17a2b8;
+    }
+
+    .memory-btn:hover {
+      background: #138496;
+    }
+
+    .download-btn {
+      background: #6c757d;
+    }
+
+    .download-btn:hover {
+      background: #5a6268;
+    }
+
+    .save-button {
+      padding: 10px 20px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.2s;
+    }
+
+    .save-button:hover {
+      background: #5568d3;
+    }
+
+    .save-button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+
+    .empty-state-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+
+    .success {
+      background: #d4edda;
+      color: #155724;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🤖 員工設定</h1>
+      <div class="nav-links">
+        <a href="/">🏢 首頁</a>
+        <a href="/security.html">🔒 安全</a>
+        <a href="/skills.html">🎯 Skills</a>
+      </div>
+    </div>
+
+    <div id="message"></div>
+
+    <div class="detect-section">
+      <button class="detect-button" id="detectButton">
+        🔍 自動偵測員工
+      </button>
+      <div class="detect-status" id="detectStatus"></div>
+    </div>
+
+    <div id="agentsContainer">
+      <div class="loading">載入中...</div>
+    </div>
+  </div>
+
+  <script src="agents-config.js"></script>
+</body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skills 列表 - Virtual Office</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background: #0a0a1a;
+      color: #e8d5b7;
+      font-family: "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    }
+    
+    .skills-container {
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+    
+    .skills-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+    
+    .skills-header h1 {
+      margin: 0;
+      font-size: 32px;
+    }
+    
+    .search-box {
+      padding: 10px 16px;
+      border: 1px solid #3a5a7c;
+      border-radius: 6px;
+      font-size: 14px;
+      width: 300px;
+      background: #1a2940;
+      color: #e8d5b7;
+    }
+    
+    .btn-scan {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    
+    .btn-scan:hover {
+      background: #45a049;
+    }
+    
+    .skills-stats {
+      background: #16213e;
+      border: 1px solid #1a3a5c;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      display: flex;
+      gap: 40px;
+    }
+    
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .stat-label {
+      font-size: 14px;
+      color: #8a9db5;
+      margin-bottom: 5px;
+    }
+    
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      color: #f0a500;
+    }
+    
+    .skills-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    
+    .skill-card {
+      background: #16213e;
+      border: 1px solid #2a3f5f;
+      border-radius: 8px;
+      padding: 20px;
+      transition: box-shadow 0.2s, border-color 0.2s;
+    }
+    
+    .skill-card:hover {
+      box-shadow: 0 4px 12px rgba(240,165,0,0.2);
+      border-color: #f0a500;
+    }
+    
+    .skill-name {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #f0a500;
+    }
+    
+    .skill-version {
+      font-size: 12px;
+      color: #8a9db5;
+      margin-bottom: 12px;
+    }
+    
+    .skill-description {
+      font-size: 14px;
+      color: #b8c5d6;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+    
+    .skill-path {
+      font-size: 12px;
+      color: #6a7d95;
+      font-family: monospace;
+      word-break: break-all;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      font-size: 18px;
+      color: #8a9db5;
+    }
+    
+    .nav {
+      background: #333;
+      padding: 15px 20px;
+      display: flex;
+      gap: 20px;
+    }
+    
+    .nav a {
+      color: white;
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+    }
+    
+    .nav a:hover {
+      background: #555;
+    }
+    
+    .nav a.active {
+      background: #4CAF50;
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <a href="/">首頁</a>
+    <a href="/security.html">安全</a>
+    <a href="/agents-config.html">Agents</a>
+    <a href="/skills.html" class="active">Skills</a>
+  </nav>
+
+  <div class="skills-container">
+    <div class="skills-header">
+      <h1>📦 Skills 列表</h1>
+      <button class="btn-scan" onclick="scanSkills()">🔄 重新掃描</button>
+    </div>
+
+    <div class="skills-stats">
+      <div class="stat-item">
+        <div class="stat-label">總共 Skills</div>
+        <div class="stat-value" id="total-skills">-</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">掃描路徑</div>
+        <div class="stat-value" id="scan-paths">4</div>
+      </div>
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+      <input 
+        type="text" 
+        id="skill-search" 
+        placeholder="🔍 搜尋 skills（名稱、描述、路徑）..." 
+        oninput="searchSkills()"
+        style="width: 100%; padding: 12px 20px; border: 1px solid #3a5a7c; border-radius: 8px; font-size: 16px; background: #1a2940; color: #e8d5b7;"
+      >
+    </div>
+
+    <div id="skills-list" class="loading">載入中...</div>
+  </div>
+
+  <script src="skills.js"></script>
+</body>
+</html>
