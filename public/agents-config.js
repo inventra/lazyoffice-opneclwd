@@ -510,39 +510,42 @@ async function openMemoryEditor(agentId, agentName, filename) {
     `;
     
     modal.innerHTML = `
-      <div style="background: #1a1a2e; border-radius: 12px; padding: 30px; max-width: 900px; width: 90%; max-height: 90vh; display: flex; flex-direction: column;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-          <h2 style="margin: 0; color: #e8d5b7;">✏️ 編輯：${filename}</h2>
-          <button onclick="closeMemoryModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #e8d5b7;">✕</button>
+      <div style="background: #1a1a2e; border-radius: 8px; padding: 20px; width: 95%; height: 92vh; display: flex; flex-direction: column; max-width: 1400px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <h2 style="margin: 0; color: #e8d5b7; font-size: 18px;">✏️ 編輯：${filename}</h2>
+          <button onclick="closeMemoryModal()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: #e8d5b7; line-height: 1;">✕</button>
         </div>
         
         <textarea id="memory-content" style="
           flex: 1;
-          font-family: 'Monaco', 'Menlo', monospace;
-          font-size: 13px;
-          padding: 15px;
+          font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+          font-size: 14px;
+          padding: 20px;
           border: 1px solid #2a3a5c;
           border-radius: 6px;
           resize: none;
           margin-bottom: 15px;
           background: #0d1525;
           color: #e8d5b7;
+          line-height: 1.6;
+          min-height: 500px;
         ">${data.content}</textarea>
         
         <div style="display: flex; gap: 10px;">
           <button onclick="saveMemoryFile(${agentId}, '${filename}')" style="
             flex: 1;
-            padding: 12px;
+            padding: 14px;
             background: #28a745;
             color: white;
             border: none;
             border-radius: 6px;
             font-size: 16px;
             cursor: pointer;
+            font-weight: 600;
           ">💾 儲存</button>
           
           <button onclick="closeMemoryModal()" style="
-            padding: 12px 24px;
+            padding: 14px 32px;
             background: #6c757d;
             color: white;
             border: none;
