@@ -59,6 +59,23 @@ Virtual Office 會持續監控您的 AI agents 並提供即時動畫效果。這
 - Docker Desktop ([下載安裝](https://www.docker.com/products/docker-desktop))
 - Node.js >= 18（本機開發模式）
 
+### 🤖 Clawdbot 自動配置（最快速！）
+
+如果你使用 Clawdbot，讓它讀取 `SETUP.md` 即可自動完成所有設定：
+
+```bash
+# 在 Clawdbot 中說：
+請讀取 ~/Desktop/virtual-office/SETUP.md 並完成設定
+```
+
+Clawdbot 會自動：
+1. ✅ 檢查 Docker 環境
+2. ✅ 執行安裝腳本
+3. ✅ 建立 vo-push.sh 整合腳本
+4. ✅ 配置環境變數
+
+---
+
 ### 方案 1：Docker 一鍵部署（推薦）
 
 1. **下載專案**
@@ -110,20 +127,7 @@ Virtual Office 會持續監控您的 AI agents 並提供即時動畫效果。這
 5. **訪問網頁**
    打開瀏覽器訪問：http://127.0.0.1:3456
 
-## 🤖 Clawdbot 自動配置
-
-如果你使用 Clawdbot，讓它讀取 `SETUP.md` 即可自動完成所有設定：
-
-```bash
-# 在 Clawdbot 中說：
-請讀取 ~/Desktop/virtual-office/SETUP.md 並完成設定
-```
-
-Clawdbot 會自動：
-1. 檢查 Docker 環境
-2. 執行安裝腳本
-3. 建立 vo-push.sh 整合腳本
-4. 配置環境變數
+---
 
 ## 📚 功能詳解
 
