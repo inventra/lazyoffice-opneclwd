@@ -1032,6 +1032,116 @@ app.post('/api/save', async (req, res) => {
   }
 });
 
+// GET /api/dashboard/costs - 成本儀表板數據
+app.get('/api/dashboard/costs', async (req, res) => {
+  try {
+    // 計算本月開始日期
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // 取得所有 agents 及其任務統計
+    const agentsResult = await pool.query(`
+      SELECT 
+        a.id,
+        a.name,
+        a.role,
+        a.salary,
+        COUNT(CASE WHEN t.status = 'completed' AND t.completed_at >= $1 THEN 1 END) as tasks_completed,
+        COUNT(CASE WHEN t.status = 'completed' AND t.completed_at >= $1 AND t.title LIKE '%cron%' THEN 1 END) as tasks_cron,
+        COUNT(CASE WHEN t.status = 'completed' AND t.completed_at >= $1 AND (t.title LIKE '%monitor%' OR t.title LIKE '%監控%') THEN 1 END) as tasks_monitoring
+      FROM agents a
+      LEFT JOIN tasks t ON a.id = t.assigned_to
+      WHERE a.clawdbot_agent_id IS NOT NULL
+      GROUP BY a.id, a.name, a.role, a.salary
+      ORDER BY tasks_completed DESC
+    `, [monthStart]);
+
+    // 計算每個 agent 的節省成本 (假設每個任務節省 1 小時，時薪 = 月薪/160)
+    const agents = agentsResult.rows.map(a => {
+      const salary = a.salary || 30000;
+      const hourlyRate = salary / 160; // 假設每月 160 工時
+      const totalTasks = parseInt(a.tasks_completed) || 0;
+      const totalHours = totalTasks; // 簡化：1 任務 = 1 小時
+      const savings = Math.round(totalHours * hourlyRate);
+      
+      return {
+        id: a.id,
+        name: a.name,
+        role: a.role || '',
+        tasks_completed: totalTasks,
+        tasks_cron: parseInt(a.tasks_cron) || 0,
+        tasks_monitoring: parseInt(a.tasks_monitoring) || 0,
+        savings: savings,
+        total_hours: totalHours,
+        monthly_salary: salary
+      };
+    });
+
+    // 計算總計
+    const totalSavings = agents.reduce((sum, a) => sum + a.savings, 0);
+    const totalTasks = agents.reduce((sum, a) => sum + a.tasks_completed, 0);
+    const totalHours = agents.reduce((sum, a) => sum + a.total_hours, 0);
+    
+    // 計算等同員工數 (假設每人每月工作 160 小時)
+    const equivEmployees = totalHours > 0 ? Math.ceil(totalHours / 160) : 0;
+
+    // 取得過去 7 天的趨勢數據
+    const trendResult = await pool.query(`
+      SELECT 
+        DATE(completed_at) as date,
+        COUNT(*) as tasks,
+        COUNT(*) * 187.5 as savings
+      FROM tasks
+      WHERE status = 'completed' 
+        AND completed_at >= NOW() - INTERVAL '7 days'
+      GROUP BY DATE(completed_at)
+      ORDER BY date
+    `);
+
+    const trend = trendResult.rows.map(t => ({
+      date: t.date.toISOString().slice(0, 10),
+      tasks: parseInt(t.tasks),
+      savings: Math.round(parseFloat(t.savings))
+    }));
+
+    // 找出本週 MVP (完成最多任務的 agent)
+    const weekStart = new Date(now);
+    weekStart.setDate(weekStart.getDate() - 7);
+    
+    const mvpResult = await pool.query(`
+      SELECT 
+        assigned_to as agent_id,
+        COUNT(*) as tasks
+      FROM tasks
+      WHERE status = 'completed' 
+        AND completed_at >= $1
+        AND assigned_to IS NOT NULL
+      GROUP BY assigned_to
+      ORDER BY tasks DESC
+      LIMIT 1
+    `, [weekStart]);
+
+    const mvp = mvpResult.rows.length > 0 ? {
+      agent_id: mvpResult.rows[0].agent_id,
+      tasks: parseInt(mvpResult.rows[0].tasks)
+    } : null;
+
+    res.json({
+      ok: true,
+      total_savings: totalSavings,
+      equiv_employees: equivEmployees,
+      month_tasks: totalTasks,
+      agents: agents,
+      trend: trend,
+      mvp: mvp
+    });
+
+  } catch (error) {
+    console.error('Dashboard costs error:', error);
+    res.status(500).json({ ok: false, error: 'Failed to load cost data' });
+  }
+});
+
 // GET /api/load - 載入辦公室佈局
 app.get('/api/load', async (req, res) => {
   try {

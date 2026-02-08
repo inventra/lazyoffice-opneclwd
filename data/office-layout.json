@@ -12,10 +12,10 @@
           "charId": "kevin",
           "name": "Kevin小幫手",
           "role": "秘書/總指揮 🎯",
-          "leftPct": 24,
-          "topPct": 74,
+          "leftPct": 45.2,
+          "topPct": 77.1,
           "direction": "sw",
-          "scale": 100,
+          "scale": 200,
           "zIndex": 10
         },
         {
@@ -23,10 +23,10 @@
           "charId": "alex",
           "name": "Alex",
           "role": "AI工程師 💻",
-          "leftPct": 40,
-          "topPct": 35,
+          "leftPct": 16.4,
+          "topPct": 51.2,
           "direction": "sw",
-          "scale": 100,
+          "scale": 200,
           "zIndex": 11
         },
         {
@@ -34,10 +34,10 @@
           "charId": "lena",
           "name": "Lena",
           "role": "研究員 🔍",
-          "leftPct": 44,
-          "topPct": 68,
+          "leftPct": 48,
+          "topPct": 24.2,
           "direction": "sw",
-          "scale": 100,
+          "scale": 200,
           "zIndex": 12
         },
         {
@@ -45,10 +45,10 @@
           "charId": "writer",
           "name": "Writer",
           "role": "文案專家 ✍️",
-          "leftPct": 59,
-          "topPct": 48,
+          "leftPct": 62.8,
+          "topPct": 39.6,
           "direction": "sw",
-          "scale": 100,
+          "scale": 200,
           "zIndex": 13
         },
         {
@@ -56,10 +56,10 @@
           "charId": "n8n_bot",
           "name": "N8N小幫手",
           "role": "自動化專家 ⚙️",
-          "leftPct": 62,
-          "topPct": 55,
+          "leftPct": 30.1,
+          "topPct": 40.8,
           "direction": "sw",
-          "scale": 100,
+          "scale": 200,
           "zIndex": 14
         }
       ]
@@ -67,5 +67,5 @@
   ],
   "currentId": "office_1770537220332_3383",
   "customSloths": {},
-  "savedAt": "2026-02-08T07:54:45.516Z"
+  "savedAt": "2026-02-08T07:59:14.018Z"
 }
